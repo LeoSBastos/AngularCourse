@@ -1,0 +1,11 @@
+<button class="btn btn-primary" (click)="toggleDisplay()">
+  Display Details
+</button>
+<p *ngIf="displayed">Secret Password = tuna</p>
+<div
+  *ngFor="let a of arr; let i = index"
+  [ngStyle]="{ backgroundColor: i > 3 ? 'blue' : 'white' }"
+  [ngClass]="{ white: i > 3 }"
+>
+  {{ a }}
+</div>
