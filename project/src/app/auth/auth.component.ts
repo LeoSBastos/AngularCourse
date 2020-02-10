@@ -32,12 +32,15 @@ export class AuthComponent implements OnInit, OnDestroy {
     private router: Router,
     private cfr: ComponentFactoryResolver,
     private store: Store<fromApp.AppState>
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.store.select('auth').subscribe(authState => {
       this.isLoading = authState.loading;
       this.error = authState.authError;
+      if (this.error) {
+        this.showErrorAlert(this.error);
+      }
     });
   }
 
