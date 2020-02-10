@@ -1,3 +1,4 @@
+import { Store } from '@ngrx/store';
 import { PlaceholderDirective } from './../shared/placeholder/placeholder.directive';
 import { AlertComponent } from './../shared/alert/alert.component';
 import { Router } from '@angular/router';
@@ -11,6 +12,8 @@ import {
   ViewChild
 } from '@angular/core';
 import { Observable, Subscription } from 'rxjs';
+import * as fromApp from '../store/app.reducer';
+import * as AuthActions from './store/auth.actions';
 
 @Component({
   selector: 'app-auth',
@@ -27,10 +30,16 @@ export class AuthComponent implements OnInit, OnDestroy {
   constructor(
     private authService: AuthService,
     private router: Router,
-    private cfr: ComponentFactoryResolver
+    private cfr: ComponentFactoryResolver,
+    private store: Store<fromApp.AppState>
   ) {}
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.store.select('auth').subscribe(authState => {
+      this.isLoading = authState.loading;
+      this.error = authState.authError;
+    });
+  }
 
   onSwitchMode() {
     this.isLoginMode = !this.isLoginMode;
@@ -46,24 +55,25 @@ export class AuthComponent implements OnInit, OnDestroy {
     let authObs: Observable<AuthResponseData>;
 
     if (this.isLoginMode) {
-      authObs = this.authService.login(email, password);
+      // authObs = this.authService.login(email, password);
+      this.store.dispatch(new AuthActions.LoginStart({ email, password }));
     } else {
       authObs = this.authService.signup(email, password);
     }
     console.log(authObs);
-    authObs.subscribe(
-      resData => {
-        console.log(resData);
-        this.isLoading = false;
-        this.router.navigate(['/recipes']);
-      },
-      errorRes => {
-        console.log(errorRes);
-        this.error = errorRes;
-        this.showErrorAlert(errorRes);
-        this.isLoading = false;
-      }
-    );
+    // authObs.subscribe(
+    //   resData => {
+    //     console.log(resData);
+    //     this.isLoading = false;
+    //     this.router.navigate(['/recipes']);
+    //   },
+    //   errorRes => {
+    //     console.log(errorRes);
+    //     this.error = errorRes;
+    //     this.showErrorAlert(errorRes);
+    //     this.isLoading = false;
+    //   }
+    // );
     form.reset();
   }
   onHandleError() {
