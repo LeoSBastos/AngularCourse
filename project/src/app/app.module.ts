@@ -26,7 +26,6 @@ import * as fromApp from './store/app.reducer';
       multi: true
     }
   ],
-  bootstrap: [AppComponent],
-  entryComponents: [AlertComponent]
+  bootstrap: [AppComponent]
 })
 export class AppModule {}
