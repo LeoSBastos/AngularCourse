@@ -13,23 +13,6 @@ import * as fromApp from '../store/app.reducer';
 export class RecipeService {
   recipesChanged = new Subject<Recipe[]>();
   private recipes: Recipe[] = [];
-  // private recipes: Recipe[] = [
-  //   new Recipe(
-  //     'Carrot Cake',
-  //     'Carrot cake with chocolate topping',
-  //     'https://img.itdg.com.br/tdg/images/recipes/000/007/228/127811/127811_original.jpg',
-  //     [new Ingredient('Carrot', 3), new Ingredient('Chocolate Powder', 1)]
-  //   ),
-  //   new Recipe(
-  //     'Prestigio Cake',
-  //     'Coconut cake with chocolate topping',
-  //     'https://receitatodahora.com.br/wp-content/uploads/2018/12/bolo-prestigio-gelado.jpg',
-  //     [
-  //       new Ingredient('Grated Coconut', 1),
-  //       new Ingredient('Chocolate Powder', 1)
-  //     ]
-  //   )
-  // ];
 
   constructor(private store: Store<fromApp.AppState>) {}
 
@@ -47,7 +30,6 @@ export class RecipeService {
   }
 
   addIngredientsToShoppingList(ingredients: Ingredient[]) {
-    // this.slService.addIngredients(ingredients);
     this.store.dispatch(new ShoppingListActions.AddIngredients(ingredients));
   }
 
