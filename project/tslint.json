@@ -52,18 +52,7 @@
     "template-no-negated-async": true,
     "use-lifecycle-interface": true,
     "use-pipe-transform-interface": true,
-    "whitespace": [
-      true,
-      "check-branch",
-      "check-decl",
-      "check-typecast",
-      "check-separator",
-      "check-rest-spread",
-      "check-typecast",
-      "check-type-operator",
-      "check-preblock",
-      "check-postbrace"
-    ]
+    "whitespace": [true, "check-branch", "check-typecast"]
   },
   "rulesDirectory": ["codelyzer"]
 }
