@@ -13,6 +13,7 @@ import { AppRoutingModule } from './app-routing.module';
 import { SharedModule } from './shared/shared.module';
 import * as fromApp from './store/app.reducer';
 
+import { RecipesEffects } from './recipes/store/recipe.effects';
 import { AuthEffects } from './auth/store/auth.effects';
 import { environment } from './../environments/environment.prod';
 
@@ -22,7 +23,7 @@ import { environment } from './../environments/environment.prod';
     BrowserModule,
     HttpClientModule,
     StoreModule.forRoot(fromApp.appReducer),
-    EffectsModule.forRoot([AuthEffects]),
+    EffectsModule.forRoot([AuthEffects, RecipesEffects]),
     StoreDevtoolsModule.instrument({ logOnly: environment.production }),
     StoreRouterConnectingModule.forRoot(),
     AppRoutingModule,

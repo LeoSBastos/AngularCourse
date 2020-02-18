@@ -1,3 +1,4 @@
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { switchMap, map } from 'rxjs/operators';
 import { Actions, Effect, ofType } from '@ngrx/effects';
@@ -5,7 +6,8 @@ import { Actions, Effect, ofType } from '@ngrx/effects';
 import { Recipe } from './../recipe.model';
 import * as RecipesActions from './recipe.actions';
 
-export class RecipeEffects {
+@Injectable()
+export class RecipesEffects {
   url = 'https://ng-course-recipe-book-8fd2b.firebaseio.com/recipes.json';
   @Effect() fetchRecipes = this.actions$.pipe(
     ofType(RecipesActions.FETCH_RECIPES),
@@ -19,11 +21,10 @@ export class RecipeEffects {
           ingredients: recipe.ingredients ? recipe.ingredients : []
         };
       });
+    }),
+    map(recipes => {
+      return new RecipesActions.SetRecipes(recipes);
     })
-    // tap(recipes => {
-    //   this.store.dispatch(new RecipeActions.SetRecipes(recipes));
-    // })
-    // );
   );
   constructor(private actions$: Actions, private http: HttpClient) {}
 }

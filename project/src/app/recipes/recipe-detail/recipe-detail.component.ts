@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 import { RecipeService } from './../recipe.service';
 import { Recipe } from './../recipe.model';
+import * as RecipesActions from './../store/recipe.actions';
 import * as fromApp from '../../store/app.reducer';
 @Component({
   selector: 'app-recipe-detail',
@@ -46,7 +47,7 @@ export class RecipeDetailComponent implements OnInit {
     this.router.navigate(['edit'], { relativeTo: this.route });
   }
   onDeleteRecipe() {
-    this.recipeService.deleteRecipe(this.id);
+    this.store.dispatch(new RecipesActions.DeleteRecipe(this.id));
     this.router.navigate(['/recipes'], { relativeTo: this.route });
   }
 }
