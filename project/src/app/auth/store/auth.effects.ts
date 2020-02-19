@@ -1,14 +1,14 @@
-import { AuthService } from './../auth.service';
-import { User } from './../user.model';
-import { Router } from '@angular/router';
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { of, throwError } from 'rxjs';
-import { switchMap, catchError, map, tap } from 'rxjs/operators';
+import { Router } from '@angular/router';
 import { Actions, ofType, Effect } from '@ngrx/effects';
+import { switchMap, catchError, map, tap } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 import * as AuthActions from './auth.actions';
-import { environment } from './../../../environments/environment';
+import { User } from '../user.model';
+import { AuthService } from '../auth.service';
 
 export interface AuthResponseData {
   kind: string;
@@ -21,65 +21,55 @@ export interface AuthResponseData {
 }
 
 const handleAuthentication = (
+  expiresIn: number,
   email: string,
   userId: string,
-  token: string,
-  expiresIn: number
+  token: string
 ) => {
   const expirationDate = new Date(new Date().getTime() + expiresIn * 1000);
   const user = new User(email, userId, token, expirationDate);
   localStorage.setItem('userData', JSON.stringify(user));
-
   return new AuthActions.AuthenticateSuccess({
-    email,
-    userId,
-    token,
-    expirationDate,
+    email: email,
+    userId: userId,
+    token: token,
+    expirationDate: expirationDate,
     redirect: true
   });
 };
 
-const handleError = errorRes => {
-  let error = 'An unknown error occurred!';
-  if (errorRes.error?.error) {
-    switch (errorRes.error.error.message) {
-      case 'EMAIL_EXISTS':
-        error = 'The email address is already in use by another account.';
-        break;
-      case 'OPERATION_NOT_ALLOWED':
-        error = 'Password sign-in is disabled for this project.';
-        break;
-      case 'TOO_MANY_ATTEMPTS_TRY_LATER':
-        error =
-          'We have blocked all requests from this device due to unusual activity. Try again later.';
-        break;
-      case 'EMAIL_NOT_FOUND':
-        error =
-          'There is no user record corresponding to this identifier. The user may have been deleted.';
-        break;
-      case 'INVALID_PASSWORD':
-        error = 'The password is invalid or the user does not have a password.';
-        break;
-      case 'USER_DISABLED':
-        error = 'The user account has been disabled by an administrator.';
-        break;
-    }
-    return of(new AuthActions.AuthenticateFail(error));
+const handleError = (errorRes: any) => {
+  let errorMessage = 'An unknown error occurred!';
+  if (!errorRes.error || !errorRes.error.error) {
+    return of(new AuthActions.AuthenticateFail(errorMessage));
   }
+  switch (errorRes.error.error.message) {
+    case 'EMAIL_EXISTS':
+      errorMessage = 'This email exists already';
+      break;
+    case 'EMAIL_NOT_FOUND':
+      errorMessage = 'This email does not exist.';
+      break;
+    case 'INVALID_PASSWORD':
+      errorMessage = 'This password is not correct.';
+      break;
+  }
+  return of(new AuthActions.AuthenticateFail(errorMessage));
 };
 
 @Injectable()
 export class AuthEffects {
-  @Effect() authSignup = this.actions$.pipe(
+  @Effect()
+  authSignup = this.actions$.pipe(
     ofType(AuthActions.SIGNUP_START),
-    switchMap((authData: AuthActions.SignupStart) => {
+    switchMap((signupAction: AuthActions.SignupStart) => {
       return this.http
         .post<AuthResponseData>(
-          'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' +
+          'https://www.googleapis.com/identitytoolkit/v3/relyingparty/signupNewUser?key=' +
             environment.firebaseAPIKey,
           {
-            email: authData.payload.email,
-            password: authData.payload.password,
+            email: signupAction.payload.email,
+            password: signupAction.payload.password,
             returnSecureToken: true
           }
         )
@@ -87,25 +77,28 @@ export class AuthEffects {
           tap(resData => {
             this.authService.setLogoutTimer(+resData.expiresIn * 1000);
           }),
-          map(resData =>
-            handleAuthentication(
+          map(resData => {
+            return handleAuthentication(
+              +resData.expiresIn,
               resData.email,
               resData.localId,
-              resData.idToken,
-              +resData.expiresIn
-            )
-          ),
-          catchError(errorRes => handleError(errorRes))
+              resData.idToken
+            );
+          }),
+          catchError(errorRes => {
+            return handleError(errorRes);
+          })
         );
     })
   );
 
-  @Effect() authLogin = this.actions$.pipe(
+  @Effect()
+  authLogin = this.actions$.pipe(
     ofType(AuthActions.LOGIN_START),
     switchMap((authData: AuthActions.LoginStart) => {
       return this.http
         .post<AuthResponseData>(
-          'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' +
+          'https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=' +
             environment.firebaseAPIKey,
           {
             email: authData.payload.email,
@@ -117,20 +110,23 @@ export class AuthEffects {
           tap(resData => {
             this.authService.setLogoutTimer(+resData.expiresIn * 1000);
           }),
-          map(resData =>
-            handleAuthentication(
+          map(resData => {
+            return handleAuthentication(
+              +resData.expiresIn,
               resData.email,
               resData.localId,
-              resData.idToken,
-              +resData.expiresIn
-            )
-          ),
-          catchError(errorRes => handleError(errorRes))
+              resData.idToken
+            );
+          }),
+          catchError(errorRes => {
+            return handleError(errorRes);
+          })
         );
     })
   );
 
-  @Effect({ dispatch: false }) authRedirect = this.actions$.pipe(
+  @Effect({ dispatch: false })
+  authRedirect = this.actions$.pipe(
     ofType(AuthActions.AUTHENTICATE_SUCCESS),
     tap((authSuccessAction: AuthActions.AuthenticateSuccess) => {
       if (authSuccessAction.payload.redirect) {
@@ -139,16 +135,8 @@ export class AuthEffects {
     })
   );
 
-  @Effect() authLogout = this.actions$.pipe(
-    ofType(AuthActions.LOGOUT),
-    tap(() => {
-      this.authService.clearLogoutTimer();
-      localStorage.removeItem('userData');
-      this.router.navigate(['/auth']);
-    })
-  );
-
-  @Effect() autoLogin = this.actions$.pipe(
+  @Effect()
+  autoLogin = this.actions$.pipe(
     ofType(AuthActions.AUTO_LOGIN),
     map(() => {
       const userData: {
@@ -160,18 +148,20 @@ export class AuthEffects {
       if (!userData) {
         return { type: 'DUMMY' };
       }
+
       const loadedUser = new User(
         userData.email,
         userData.id,
         userData._token,
         new Date(userData._tokenExpirationDate)
       );
+
       if (loadedUser.token) {
+        // this.user.next(loadedUser);
         const expirationDuration =
           new Date(userData._tokenExpirationDate).getTime() -
           new Date().getTime();
         this.authService.setLogoutTimer(expirationDuration);
-
         return new AuthActions.AuthenticateSuccess({
           email: loadedUser.email,
           userId: loadedUser.id,
@@ -179,10 +169,26 @@ export class AuthEffects {
           expirationDate: new Date(userData._tokenExpirationDate),
           redirect: false
         });
+
+        // const expirationDuration =
+        //   new Date(userData._tokenExpirationDate).getTime() -
+        //   new Date().getTime();
+        // this.autoLogout(expirationDuration);
       }
       return { type: 'DUMMY' };
     })
   );
+
+  @Effect({ dispatch: false })
+  authLogout = this.actions$.pipe(
+    ofType(AuthActions.LOGOUT),
+    tap(() => {
+      this.authService.clearLogoutTimer();
+      localStorage.removeItem('userData');
+      this.router.navigate(['/auth']);
+    })
+  );
+
   constructor(
     private actions$: Actions,
     private http: HttpClient,
